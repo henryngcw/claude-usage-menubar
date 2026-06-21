@@ -1,5 +1,7 @@
 # custom-swiftbar-widgets
 
+![](./claude-code-usage-menu-bar-example.png)
+
 Personal [SwiftBar](https://github.com/swiftbar/SwiftBar) plugins.
 
 ## `claude-usage.5m.sh` — Claude subscription usage
@@ -18,10 +20,10 @@ The menu bar always shows the robot, a percentage, and a reset time. When
 usage data can't be fetched it falls back to `🤖 0% · idle`, and the dropdown
 shows a one-line reason.
 
-| Menu bar | Meaning |
-|----------|---------|
-| `🤖 42% · 3:15 PM` | normal — session usage + reset time |
-| `🤖 0% · idle` | no data — not logged in, unreachable, or rate-limited (see dropdown) |
+| Menu bar           | Meaning                                                              |
+| ------------------ | -------------------------------------------------------------------- |
+| `🤖 42% · 3:15 PM` | normal — session usage + reset time                                  |
+| `🤖 0% · idle`     | no data — not logged in, unreachable, or rate-limited (see dropdown) |
 
 ### Install
 
