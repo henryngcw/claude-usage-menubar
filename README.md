@@ -1,69 +1,47 @@
-# 🤖 Claude Usage Menu Bar
+# custom-swiftbar-widgets
 
-Live **Claude Code** subscription usage in your macOS menu bar — the same numbers `/usage` shows, always visible.
+Personal [SwiftBar](https://github.com/swiftbar/SwiftBar) plugins.
 
-```
-🤖 14% · 3:20 AM          ← session usage % · when it resets
-─────────────────
-Session (5h): 14%
-  resets 3:20 AM
-Weekly (7d): 17%
-  resets Thu 11:00 AM
-```
+## `claude-usage.sh` — Claude subscription usage
 
-It refreshes every minute, so you can see how much of your limit is left without typing `/usage`.
+Shows live Claude subscription usage in the menu bar — the same numbers
+`/usage` reports, pulled from the OAuth usage endpoint:
 
-## Why this exists
+- **🤖 42% · 3:15 PM** — current 5-hour (session) window usage + next reset
+- Dropdown adds the weekly (7-day) window and its reset time
 
-Claude Code shows usage only when you run `/usage`. This pins it to your menu bar. No API key, no config — it reads whoever is logged into Claude Code on this Mac and shows *their* usage.
+The access token is read from the macOS keychain (`Claude Code-credentials`).
 
-## How it works
+### States
 
-Claude meters two rolling windows (there is **no daily limit**):
+| Menu bar | Meaning |
+|----------|---------|
+| `🤖 42% · 3:15 PM` | normal — session usage + reset time |
+| `🤖 inactive` | token expired / session timed out — re-login to Claude Code |
+| `🤖 ?` | no token in keychain |
+| `🤖 —` | usage endpoint unreachable |
 
-- **Session (5h)** — the one that gates you minute-to-minute.
-- **Weekly (7d)** — your longer-term cap.
+### Why there's no polling interval
 
-The plugin reads your OAuth token from the macOS keychain and calls the same usage endpoint Claude Code uses internally, then renders the result. Reset times are shown in your local timezone.
+The filename is `claude-usage.sh` with **no** `.Nm.` refresh suffix on
+purpose. SwiftBar therefore runs it once on load and never on a timer.
 
-## Requirements
+Each run is a network call to Anthropic's usage endpoint. Polling it on a
+short interval (e.g. every minute) gets **rate-limited by Anthropic**, which
+is exactly when you'd see the widget go blank or error. So instead of polling:
 
-- macOS
-- [SwiftBar](https://github.com/swiftbar/SwiftBar) (`brew install --cask swiftbar`)
-- [Claude Code](https://claude.com/claude-code) installed and **logged in** (Pro/Max subscription)
+- A Claude Code **`Stop` hook** triggers a refresh via
+  `swiftbar://refreshplugin?name=claude-usage.sh` after every completion.
+- That means the number updates right when usage actually changes (when
+  Claude does work) and makes **zero** background calls while idle.
 
-## Install
+Hook lives in `~/.claude/settings.json` under `hooks.Stop`.
 
-```sh
-# 1. Install SwiftBar
-brew install --cask swiftbar
+### Install
 
-# 2. Drop the plugin into your SwiftBar plugin folder
-#    (SwiftBar asks you to pick this folder on first launch)
-curl -fsSL https://raw.githubusercontent.com/henryngcw/claude-usage-menubar/main/claude-usage.1m.sh \
-  -o "$HOME/swiftbar-plugins/claude-usage.1m.sh"
-chmod +x "$HOME/swiftbar-plugins/claude-usage.1m.sh"
-```
+1. Copy/symlink `claude-usage.sh` into your SwiftBar plugin folder.
+2. Make it executable: `chmod +x claude-usage.sh`.
+3. Refresh SwiftBar's plugin list (or restart SwiftBar) to pick it up.
 
-Then launch SwiftBar, point it at that folder (or click **Refresh All**). `🤖 14% · 3:20 AM` appears in your menu bar.
-
-> Replace `$HOME/swiftbar-plugins` with whatever folder you told SwiftBar to use.
-
-## Customize
-
-- **Refresh rate** — rename the file: `claude-usage.30s.sh`, `.5m.sh`, etc. The number before the unit (`s`/`m`/`h`) is the interval.
-- **Menu bar text** — edit the `print(f"🤖 ...")` line near the bottom of the script. Want both windows? Try `🤖 {fh_u:.0f}% · {sd_u:.0f}%`.
-- **Icon** — swap the 🤖 for any emoji.
-
-## Privacy
-
-Your token never leaves your machine except to Anthropic's own usage endpoint (the same call Claude Code already makes). Nothing is stored, logged, or sent anywhere else. The script is ~40 lines — read it.
-
-## Caveats
-
-- Uses an **undocumented** endpoint Claude Code relies on internally. If it ever stops working: re-login to Claude Code (fixes auth), or open an issue (the path may have moved upstream).
-- Subscription (Pro/Max) accounts only — this is the OAuth usage endpoint, not the pay-as-you-go API.
-
-## License
-
-MIT
+> ⚠️ The OAuth usage endpoint is undocumented and may change. If it 401s,
+> re-login to Claude Code; if it 404s, the path moved.
