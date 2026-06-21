@@ -8,7 +8,7 @@
 #
 # Claude meters a 5-hour (session) window and a 7-day (weekly) window — there is
 # no literal "daily" limit, so "Session (5h)" is the day-to-day one.
-# The ".1m." in the filename = refresh every minute. Rename to .30s./.5m./etc to taste.
+# The ".5m." in the filename = refresh every 5 minutes. Rename to .30s./.1m./etc to taste.
 #
 # Note: this calls an undocumented endpoint that Claude Code uses internally.
 # If it ever 401s, re-login to Claude Code; if it 404s, the path moved upstream.
@@ -19,31 +19,40 @@ export PATH="/usr/bin:/bin:$PATH"
 TOKEN=$(security find-generic-password -s "Claude Code-credentials" -w 2>/dev/null \
   | /usr/bin/python3 -c 'import json,sys; print(json.load(sys.stdin)["claudeAiOauth"]["accessToken"])' 2>/dev/null)
 
-if [ -z "$TOKEN" ]; then
-  echo "🤖 ?"; echo "---"; echo "Not logged in — open Claude Code and sign in"; exit 0
+# No token → empty body. Everything funnels through the same renderer below,
+# which always shows the robot + 0% + "idle" when data is missing.
+BODY=""
+export STATUS="Not logged in — open Claude Code and sign in"
+if [ -n "$TOKEN" ]; then
+  STATUS="Usage endpoint unreachable"
+  BODY=$(curl -s --max-time 8 \
+    -H "Authorization: Bearer $TOKEN" \
+    -H "anthropic-beta: oauth-2025-04-20" \
+    -H "anthropic-version: 2023-06-01" \
+    "https://api.anthropic.com/api/oauth/usage")
 fi
 
-BODY=$(curl -s --max-time 8 \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "anthropic-beta: oauth-2025-04-20" \
-  -H "anthropic-version: 2023-06-01" \
-  "https://api.anthropic.com/api/oauth/usage")
-
 echo "$BODY" | /usr/bin/python3 -c '
-import json, sys
+import json, os, sys
 from datetime import datetime
 
+# Parse whatever we got. Anything missing or an error reply -> no usage data,
+# and we fall back to a single, consistent "0% · idle" UI.
+status = os.environ.get("STATUS", "No usage data")
 try:
     d = json.load(sys.stdin)
 except Exception:
-    print("🤖 —"); print("---"); print("Usage endpoint unreachable"); sys.exit()
+    d = {}
+if not isinstance(d, dict) or "error" in d:
+    status = (d.get("error") or {}).get("message", status) if isinstance(d, dict) else status
+    d = {}
 
 def reset(s, fmt):
     try:
         dt = datetime.fromisoformat(s).astimezone()   # -> local time
         return dt.strftime(fmt).replace(" 0", " ").lstrip("0")
     except Exception:
-        return "?"
+        return "idle"
 
 fh, sd = d.get("five_hour") or {}, d.get("seven_day") or {}
 fh_u, sd_u = fh.get("utilization", 0), sd.get("utilization", 0)
@@ -52,6 +61,9 @@ sd_r = reset(sd.get("resets_at", ""), "%a %I:%M %p")
 
 print(f"🤖 {fh_u:.0f}% · {fh_r}")      # menu bar: session % · next reset
 print("---")
+if not d:
+    print(status)
+    print("---")
 print(f"Session (5h): {fh_u:.0f}%")
 print(f"  resets {fh_r} | size=11")
 print(f"Weekly (7d): {sd_u:.0f}%")

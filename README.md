@@ -21,27 +21,22 @@ The access token is read from the macOS keychain (`Claude Code-credentials`).
 | `🤖 ?` | no token in keychain |
 | `🤖 —` | usage endpoint unreachable |
 
-### Why there's no polling interval
-
-The filename is `claude-usage.sh` with **no** `.Nm.` refresh suffix on
-purpose. SwiftBar therefore runs it once on load and never on a timer.
-
-Each run is a network call to Anthropic's usage endpoint. Polling it on a
-short interval (e.g. every minute) gets **rate-limited by Anthropic**, which
-is exactly when you'd see the widget go blank or error. So instead of polling:
-
-- A Claude Code **`Stop` hook** triggers a refresh via
-  `swiftbar://refreshplugin?name=claude-usage.sh` after every completion.
-- That means the number updates right when usage actually changes (when
-  Claude does work) and makes **zero** background calls while idle.
-
-Hook lives in `~/.claude/settings.json` under `hooks.Stop`.
-
 ### Install
 
-1. Copy/symlink `claude-usage.sh` into your SwiftBar plugin folder.
-2. Make it executable: `chmod +x claude-usage.sh`.
+1. Copy/symlink `claude-usage.5m.sh` into your SwiftBar plugin folder.
+2. Make it executable: `chmod +x claude-usage.5m.sh`.
 3. Refresh SwiftBar's plugin list (or restart SwiftBar) to pick it up.
+
+### Polling interval
+
+The filename is `claude-usage.5m.sh`. SwiftBar reads the `.5m.` suffix and
+refreshes the widget every 5 minutes.
+
+Each run is a network call to Anthropic's usage endpoint. The endpoint
+**rate-limits bursts** — calling it several times in quick succession returns
+`{"error": {"type": "rate_limit_error"}}` instead of usage. One call every
+5 minutes stays well clear of that. If you shorten the interval and start
+seeing `🤖 —`, you're polling too fast; back off.
 
 > ⚠️ The OAuth usage endpoint is undocumented and may change. If it 401s,
 > re-login to Claude Code; if it 404s, the path moved.
