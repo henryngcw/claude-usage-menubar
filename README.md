@@ -1,4 +1,4 @@
-# custom-swiftbar-widgets
+# claude usage macos menubar
 
 ![](./claude-code-usage-menu-bar-example.png)
 
@@ -14,6 +14,12 @@ Shows live Claude subscription usage in the menu bar — the same numbers
 
 The access token is read from the macOS keychain (`Claude Code-credentials`).
 
+### Installtion
+
+1. Run `brew install --cask swiftbar`
+2. Download `claude-usage.5m.sh` file and put in a folder where swiftbar will read it.
+3. Done
+
 ### States
 
 The menu bar always shows the robot, a percentage, and a reset time. When
@@ -24,12 +30,6 @@ shows a one-line reason.
 | ------------------ | -------------------------------------------------------------------- |
 | `🤖 42% · 3:15 PM` | normal — session usage + reset time                                  |
 | `🤖 0% · idle`     | no data — not logged in, unreachable, or rate-limited (see dropdown) |
-
-### Install
-
-1. Copy/symlink `claude-usage.5m.sh` into your SwiftBar plugin folder.
-2. Make it executable: `chmod +x claude-usage.5m.sh`.
-3. Refresh SwiftBar's plugin list (or restart SwiftBar) to pick it up.
 
 ### Polling interval
 
