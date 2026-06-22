@@ -15,6 +15,17 @@
 
 export PATH="/usr/bin:/bin:$PATH"
 
+# SwiftBar encodes the refresh interval in the filename (.5m.). The "Refresh
+# interval" menu items below re-run us with this arg to rename the file; SwiftBar
+# watches the folder and reschedules on the new name. ponytail: rename is the
+# only knob SwiftBar gives — no runtime interval API.
+SELF="${SWIFTBAR_PLUGIN_PATH:-$0}"
+if [ "$1" = "--set-interval" ]; then
+  mv "$SELF" "$(dirname "$SELF")/claude-usage.$2.sh"
+  exit 0
+fi
+export SELF
+
 # Read the OAuth token from the keychain (service name is the same for every user).
 TOKEN=$(security find-generic-password -s "Claude Code-credentials" -w 2>/dev/null \
   | /usr/bin/python3 -c 'import json,sys; print(json.load(sys.stdin)["claudeAiOauth"]["accessToken"])' 2>/dev/null)
@@ -33,7 +44,7 @@ if [ -n "$TOKEN" ]; then
 fi
 
 echo "$BODY" | /usr/bin/python3 -c '
-import json, os, sys
+import json, os, re, sys
 from datetime import datetime
 
 # Parse whatever we got. Anything missing or an error reply -> no usage data,
@@ -62,7 +73,21 @@ sd_r = reset(sd.get("resets_at", ""), "%a %I:%M %p")
 print(f"🤖 {fh_u:.0f}% · {fh_r}")      # menu bar: session % · next reset
 print("---")
 if not d:
-    print(status)
+    # No usage data. Explain why + how to recover, instead of a bare status line.
+    print(f"⚠️ No usage data | size=12")
+    print(f"{status} | size=11")
+    print("---")
+    print("How to fix: | size=11")
+    if "logged in" in status.lower():
+        print("1. Open Claude Code (the CLI) and run /login | size=11")
+        print("2. Then click Refresh below | size=11")
+    elif "rate" in status.lower():
+        print("Rate-limited — wait a minute, then Refresh. | size=11")
+        print("Do not poll faster than the .5m. filename. | size=11")
+    else:
+        print("1. Check your internet connection | size=11")
+        print("2. In Claude Code, run /login to refresh the token | size=11")
+        print("3. Click Refresh below | size=11")
     print("---")
 print(f"Session (5h): {fh_u:.0f}%")
 print(f"  resets {fh_r} | size=11")
@@ -70,4 +95,16 @@ print(f"Weekly (7d): {sd_u:.0f}%")
 print(f"  resets {sd_r} | size=11")
 print("---")
 print("Refresh | refresh=true")
+
+# Refresh-interval picker. Each item renames the script (via --set-interval) so
+# SwiftBar reschedules. Current interval (parsed from our filename) gets a ✓.
+self = os.environ.get("SELF", "")
+cur = (re.search(r"\.(\d+[smh])\.sh$", os.path.basename(self)) or [None, ""])[1]
+print("Refresh interval | size=11")
+for label, val in [("2 min","2m"),("3 min","3m"),("5 min","5m"),
+                   ("10 min","10m"),("30 min","30m"),("1 hour","1h")]:
+    mark = " ✓" if val == cur else ""
+    print(f"--{label}{mark} | bash=\"{self}\" param1=--set-interval param2={val} "
+          f"terminal=false refresh=true | size=11")
+print("--Shorter intervals can hit rate limits; 5 min is safe. | size=10")
 '
