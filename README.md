@@ -14,7 +14,7 @@ Shows live Claude subscription usage in the menu bar — the same numbers
 
 The access token is read from the macOS keychain (`Claude Code-credentials`).
 
-### Installtion
+### Installation
 
 1. Run `brew install --cask swiftbar`
 2. Download `claude-usage.5m.sh` file and put in a folder where swiftbar will read it.

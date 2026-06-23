@@ -1,4 +1,17 @@
 #!/bin/bash
+#
+# SwiftBar/xbar plugin metadata (parsed by both plugin catalogs):
+# <xbar.title>Claude Usage</xbar.title>
+# <xbar.version>v1.0</xbar.version>
+# <xbar.author>Henry Ng</xbar.author>
+# <xbar.author.github>henryngcw</xbar.author.github>
+# <xbar.desc>Live Claude Code subscription usage in the menu bar — the same numbers /usage reports, pulled from the keychain OAuth token. No API key, no setup.</xbar.desc>
+# <xbar.image>https://raw.githubusercontent.com/henryngcw/claude-usage-menubar/main/claude-code-usage-menu-bar-example.png</xbar.image>
+# <xbar.dependencies>bash</xbar.dependencies>
+# <xbar.abouturl>https://github.com/henryngcw/claude-usage-menubar</xbar.abouturl>
+# <swiftbar.hideAbout>false</swiftbar.hideAbout>
+# <swiftbar.hideRunInTerminal>false</swiftbar.hideRunInTerminal>
+#
 # Claude Code usage in your macOS menu bar — a SwiftBar plugin.
 # Shows your live subscription usage % and next reset time (same data as /usage).
 #
